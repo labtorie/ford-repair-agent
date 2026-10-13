@@ -21,34 +21,20 @@ export function AgentHelp({ onClose }: { onClose: () => void }) {
           а перед ответом агент сам себя перепроверяет: сверяет цитаты и запускает независимого проверяющего.
         </p>
 
-        <h3>1. Установка (один раз)</h3>
+        <h3>1. Установка (один раз): macOS, Linux, Windows</h3>
         <ol>
-          <li>Установите Claude Code и войдите в аккаунт. Нужен Python 3.9 или новее, на Windows также Git for Windows (Claude Code работает через Git Bash).</li>
-          <li>
-            {repo
-              ? <>Склонируйте репозиторий агента <a href={repo} target="_blank" rel="noreferrer">{repo}</a> и положите в его корень </>
-              : <>Возьмите папку проекта агента (<code>tools/</code>, <code>.claude/</code>, <code>CLAUDE.md</code>) и положите в её корень </>}
-            ISO <code>2000_2004 Ford Car Service Manual.iso</code>.
-          </li>
-          <li>В корне проекта распакуйте мануал и постройте поисковый индекс. Это займёт несколько минут, на диске понадобится около 7 ГБ.
-            <p><b>macOS / Linux:</b></p>
-            <pre>{`mkdir -p raw
-tar -xf "2000_2004 Ford Car Service Manual.iso" -C raw CONTENT/USENI4
-python3 -m venv .venv && .venv/bin/pip install pypdf
-.venv/bin/python tools/extract_all.py         # формат POD BAY → out/USENI4
-.venv/bin/python tools/build_index.py         # индекс → index/manual.db
-rm -rf raw                                    # больше не нужна`}</pre>
-            <span className="muted small">На macOS <code>tar</code> читает ISO. На Linux поставьте <code>libarchive-tools</code> и используйте <code>bsdtar</code>.</span>
-            <p><b>Windows (PowerShell):</b> откройте ISO двойным кликом. Он подключится как диск, например <code>E:</code>. Затем:</p>
-            <pre>{`py -m venv .venv
-.venv\Scripts\pip install pypdf
-.venv\Scripts\python tools\extract_all.py E:\CONTENT\USENI4 out\USENI4
-.venv\Scripts\python tools\build_index.py`}</pre>
+          <li>Установите Claude Code и войдите в аккаунт. Нужны также Python 3.9+ и git, на Windows — Git for Windows.</li>
+          <li>Склонируйте <a href={repo ?? 'https://github.com/labtorie/ford-repair-agent'} target="_blank" rel="noreferrer">репозиторий агента</a> и скачайте поисковый индекс мануала: около 165 МБ, в распакованном виде ~660 МБ.
+            Больше ничего ставить не нужно, ISO не требуется.
+            <pre>{`git clone ${repo ?? 'https://github.com/labtorie/ford-repair-agent'}.git
+cd ford-repair-agent
+python3 tools/fetch_index.py`}</pre>
+            <span className="muted small">На Windows вместо <code>python3</code> используйте <code>py</code> или <code>python</code>.</span>
           </li>
         </ol>
 
         <h3>2. Вопрос агенту</h3>
-        <p>В папке проекта запустите <code>claude</code> и напишите:</p>
+        <p>В папке <code>ford-repair-agent</code> запустите <code>claude</code> и напишите:</p>
         <pre>{`/ford 2003 F-150 5.4L горит check engine, код P0171. Что проверять?
 /ford 2002 Explorer 4.0L момент затяжки суппортов передних тормозов`}</pre>
         <p>
