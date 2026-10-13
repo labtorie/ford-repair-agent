@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tools/manual.sh:*)",
+      "Bash(.venv/bin/python tools/manual.py:*)"
+    ]
+  }
+}

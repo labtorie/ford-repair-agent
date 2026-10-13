@@ -1,0 +1,10 @@
+*.iso
+raw/
+out/
+index/
+.venv/
+*.log
+.DS_Store
+web/build/
+web/app/node_modules/
+web/app/dist/
