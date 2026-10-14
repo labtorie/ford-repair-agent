@@ -57,19 +57,22 @@ function Header() {
     setHeight(el.offsetHeight)
     return () => ro.disconnect()
   }, [])
-  // hide on scroll down, show again as soon as the user scrolls up
+  // mobile only: hide on scroll down, show again as soon as the user scrolls up (desktop header always stays)
   useEffect(() => {
+    const mobile = window.matchMedia('(max-width: 760px)')
     let last = window.scrollY
     const onScroll = () => {
       const y = window.scrollY
       const d = y - last
-      if (y < 8) setHidden(false)
+      if (!mobile.matches || y < 8) setHidden(false)
       else if (d > 6 && !ref.current?.contains(document.activeElement)) setHidden(true)
       else if (d < -6) setHidden(false)
       if (Math.abs(d) > 6 || y < 8) last = y
     }
+    const onMedia = () => { if (!mobile.matches) setHidden(false) }
     window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    mobile.addEventListener('change', onMedia)
+    return () => { window.removeEventListener('scroll', onScroll); mobile.removeEventListener('change', onMedia) }
   }, [])
   useEffect(() => { setHidden(false) }, [loc.pathname])
   // CSS: --header-h = full height (page padding), --header-offset = visible part (sticky panels, drawer, anchors)
