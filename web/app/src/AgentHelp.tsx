@@ -13,14 +13,28 @@ export function AgentHelp({ onClose }: { onClose: () => void }) {
     <div className="modal-bg" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Инструкция">
         <button className="modal-x" onClick={onClose} aria-label="Закрыть">×</button>
-        <h2>ИИ-агент по мануалу</h2>
+        <h2>ИИ-ассистент по мануалу</h2>
         <p>
-          Этот сайт — просто навигатор по мануалу. Поиск с ответами делает ИИ-агент, он работает
-          локально в <a href="https://claude.com/claude-code" target="_blank" rel="noreferrer">Claude Code</a>.
+          На сайте можно читать и искать по мануалу самому. А можно задать вопрос ИИ: в чате на сайте
+          (бесплатно, со своим ключом OpenRouter) или через агента в <a href="https://claude.com/claude-code" target="_blank" rel="noreferrer">Claude Code</a>.
           Агент отвечает <b>только по тексту мануала</b>. У каждого утверждения есть ссылка на источник,
           а перед ответом агент сам себя перепроверяет: сверяет цитаты и запускает независимого проверяющего.
         </p>
 
+        <h3>Вариант А: чат прямо на сайте (бесплатно, без установки)</h3>
+        <ol>
+          <li>Зарегистрируйтесь на <a href="https://openrouter.ai" target="_blank" rel="noreferrer">OpenRouter</a> и
+            создайте ключ на странице <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer">Keys</a>. Карта не нужна.</li>
+          <li>Выберите автомобиль, откройте вкладку <b>«🤖 ИИ-чат»</b>, вставьте ключ и задайте вопрос.</li>
+        </ol>
+        <p className="muted small">
+          Работают бесплатные модели: до 50 запросов в день, один вопрос — 2–4 запроса. Ключ хранится только в вашем
+          браузере. Бесплатные модели слабее Claude, поэтому ответ проверяется: цитаты сверяются с мануалом кодом,
+          затем модель-проверяющий ищет неподтверждённые утверждения. Результат проверки показан под ответом.
+        </p>
+
+        <h2 style={{ marginTop: 22 }}>Вариант Б: агент в Claude Code (надёжнее)</h2>
+        <p>Полноценный агент: сам ищет в несколько шагов, ходит по ссылкам между разделами и перепроверяет себя отдельным агентом-проверяющим.</p>
         <h3>1. Установка (один раз): macOS, Linux, Windows</h3>
         <ol>
           <li>Установите Claude Code и войдите в аккаунт. Нужны также Python 3.9+ и git, на Windows — Git for Windows.</li>

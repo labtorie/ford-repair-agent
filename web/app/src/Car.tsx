@@ -4,9 +4,10 @@ import { useCatalog } from './App'
 import { carBooks, idToRoute, loadBook, TYPE_LABEL, TYPE_SHORT, type Book, type Catalog } from './data'
 import { highlight, search, tokens, type Hit } from './search'
 import { Toc } from './Toc'
+import { Chat } from './chat/Chat'
 
 const TABS: [string, string][] = [
-  ['search', 'Поиск'], ['SERVICE', 'Мануал'], ['PCED', 'PCED'], ['EVTM', 'Электросхемы'],
+  ['search', 'Поиск'], ['chat', '🤖 ИИ-чат'], ['SERVICE', 'Мануал'], ['PCED', 'PCED'], ['EVTM', 'Электросхемы'],
   ['BODYREP', 'Кузов'], ['TSB', 'TSB'], ['RECALL', 'Отзывы'],
 ]
 
@@ -131,13 +132,14 @@ export function Car() {
       </div>
       <nav className="tabs">
         {TABS.map(([k, label]) => (
-          <Link key={k} className={`tab ${tab === k ? 'on' : ''} ${k !== 'search' && !books[k]?.length ? 'empty' : ''}`} to={`/car/${encodeURIComponent(model)}/${year}/${k}`}>
-            {label}{k !== 'search' && books[k]?.length ? <span className="cnt">{books[k].length}</span> : null}
+          <Link key={k} className={`tab ${tab === k ? 'on' : ''} ${k !== 'search' && k !== 'chat' && !books[k]?.length ? 'empty' : ''}`} to={`/car/${encodeURIComponent(model)}/${year}/${k}`}>
+            {label}{k !== 'search' && k !== 'chat' && books[k]?.length ? <span className="cnt">{books[k].length}</span> : null}
           </Link>
         ))}
       </nav>
       <div className="tab-body">
         {tab === 'search' && <SearchTab books={books} model={model} year={year} />}
+        {tab === 'chat' && <Chat key={`${model}/${year}`} books={books} model={model} year={year} />}
         {['SERVICE', 'PCED', 'EVTM', 'BODYREP'].includes(tab) && (
           <>
             <p className="muted small">{TYPE_LABEL[tab]}</p>

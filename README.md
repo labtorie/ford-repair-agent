@@ -8,6 +8,11 @@ re-reads every cited source.
 
 Web viewer for the same manual (navigation, search, figures, wiring PDFs): https://labtorie.github.io/ford-manual/
 
+There is also a lighter in-browser chat on the web viewer (car page → **🤖 ИИ-чат**). It uses the visitor's own free
+[OpenRouter](https://openrouter.ai/keys) key. The key stays in the browser and is sent only to OpenRouter. It needs
+2–4 model requests per question, so it fits the free tier (50 requests/day): plan → in-browser search → answer with
+citations → deterministic quote check → verifier → revision if needed. Code: `web/app/src/chat/`.
+
 ## Setup (macOS, Linux, Windows)
 
 Requirements: Claude Code, Python 3.9+, git (on Windows: Git for Windows, since Claude Code uses Git Bash).
