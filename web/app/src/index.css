@@ -242,3 +242,13 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; }
 .about-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 2px 18px; }
 .about { scroll-margin-top: calc(var(--header-offset, 56px) + 12px); }
 @media (max-width: 760px) { .about { padding: 14px 14px; } }
+
+/* openrouter usage */
+.usage { margin: 8px 0 4px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); font-size: 13.5px; }
+.usage .row { display: flex; align-items: center; gap: 8px; margin: 0 0 4px; }
+.usage button.icon { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 6px; padding: 0 7px; cursor: pointer; }
+.usage .bar { height: 6px; background: var(--code-bg); border-radius: 999px; overflow: hidden; margin: 5px 0; }
+.usage .bar span { display: block; height: 100%; background: var(--accent); }
+.usage .bar span.low { background: #d9822b; }
+.usage-warn { background: #fff7e6; color: #5c3b00; border: 1px solid #f5d38a; border-radius: 8px; padding: 6px 10px; font-size: 13.5px; }
+@media (prefers-color-scheme: dark) { .usage-warn { background: #2e2410; color: #f1d9a6; border-color: #6b5420; } }

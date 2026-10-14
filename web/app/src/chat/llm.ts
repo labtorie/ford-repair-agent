@@ -29,6 +29,39 @@ export async function freeModels(): Promise<FreeModel[]> {
   return free.sort((a, b) => rank(a.id) - rank(b.id) || a.id.localeCompare(b.id))
 }
 
+export type KeyInfo = {
+  label: string
+  isFreeTier: boolean            // never bought credits
+  free?: { used: number; limit: number; remaining: number } // free-model requests, current UTC day
+  usageDaily: number             // credits ($) spent today (UTC)
+  limitRemaining: number | null  // credits left on the key, null = no key limit
+}
+
+/** Key limits/usage: GET /api/v1/key (free-model daily requests are reported here; per-minute limit is not). */
+export async function keyInfo(signal?: AbortSignal): Promise<KeyInfo> {
+  const key = store.key
+  if (!key) throw new LlmError(401, 'Не задан ключ OpenRouter.')
+  const r = await fetch(`${BASE}/key`, { headers: { Authorization: `Bearer ${key}` }, signal })
+    .catch(() => { throw new LlmError(0, 'Не удалось связаться с OpenRouter: проверьте интернет или блокировщики.') })
+  if (!r.ok) throw new LlmError(r.status, explain(r.status, await r.text().catch(() => '')))
+  const d = (await r.json()).data ?? {}
+  const f = d.free_model_daily_requests
+  return {
+    label: d.label ?? '',
+    isFreeTier: !!d.is_free_tier,
+    free: f && typeof f.limit === 'number' ? { used: f.used ?? 0, limit: f.limit, remaining: f.remaining ?? Math.max(0, f.limit - (f.used ?? 0)) } : undefined,
+    usageDaily: Number(d.usage_daily ?? 0),
+    limitRemaining: d.limit_remaining ?? null,
+  }
+}
+
+/** Local time when the UTC day (and the free daily quota) resets. */
+export function dailyResetLocal(): string {
+  const now = new Date()
+  const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1))
+  return next.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', hour12: false })
+}
+
 export class LlmError extends Error {
   status: number
   constructor(status: number, msg: string) { super(msg); this.status = status }

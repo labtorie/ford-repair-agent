@@ -1,13 +1,49 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { idToRoute } from '../data'
 import { runAgent, type AgentResult, type Progress } from './agent'
-import { freeModels, store, type FreeModel } from './llm'
+import { dailyResetLocal, freeModels, keyInfo, store, type FreeModel, type KeyInfo } from './llm'
 import { renderMd } from './md'
 import { openAgentHelp } from '../events'
 
 type Turn = { q: string; progress: Progress[]; text: string; result?: AgentResult; error?: string; done: boolean }
 
-function Settings({ onChange }: { onChange: () => void }) {
+type Usage = { info: KeyInfo | null; loading: boolean; err: string; reload: () => void }
+
+function UsagePanel({ u }: { u: Usage }) {
+  const f = u.info?.free
+  return (
+    <div className="usage">
+      <div className="row">
+        <b>Лимиты OpenRouter</b>
+        <button className="icon" onClick={u.reload} disabled={u.loading} title="Обновить">↻</button>
+        {u.loading && <span className="muted small">проверяю…</span>}
+      </div>
+      {u.err && <div className="error small">{u.err}</div>}
+      {u.info && (
+        <>
+          {f ? (
+            <>
+              <div>
+                Бесплатные запросы сегодня: <b>{f.used} из {f.limit}</b> · осталось <b>{f.remaining}</b>
+                {' '}(≈ {Math.floor(f.remaining / 3)} вопр.)
+              </div>
+              <div className="bar" aria-hidden><span style={{ width: `${Math.min(100, (f.used / Math.max(1, f.limit)) * 100)}%` }} className={f.remaining < 4 ? 'low' : ''} /></div>
+            </>
+          ) : (
+            <div className="muted small">OpenRouter не сообщил дневной лимит бесплатных запросов для этого ключа.</div>
+          )}
+          <div className="muted small">
+            Сброс в {dailyResetLocal()} по вашему времени (00:00 UTC). Отдельно действует лимит 20 запросов в минуту: OpenRouter его не показывает.
+            {u.info.usageDaily > 0 && <> Потрачено кредитов сегодня: ${u.info.usageDaily.toFixed(4)}.</>}
+            {u.info.limitRemaining !== null && <> Остаток кредитов на ключе: ${u.info.limitRemaining.toFixed(2)}.</>}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+function Settings({ onChange, usage }: { onChange: () => void; usage: Usage }) {
   const [key, setKey] = useState(store.key)
   const [edit, setEdit] = useState(!store.key)
   const [models, setModels] = useState<FreeModel[]>([])
@@ -37,6 +73,7 @@ function Settings({ onChange }: { onChange: () => void }) {
           <button onClick={() => { store.key = ''; setKey(''); setEdit(true); onChange() }}>Удалить ключ</button>
         </div>
       )}
+      {!edit && store.key && <UsagePanel u={usage} />}
       <div className="row">
         <label>
           Модель&nbsp;
@@ -101,6 +138,18 @@ export function Chat({ model, year, books }: { model: string; year: string; book
   const end = useRef<HTMLDivElement>(null)
   const ready = !!store.key && !!store.model
   const refresh = useMemo(() => () => setTick((t) => t + 1), [])
+  const [info, setInfo] = useState<KeyInfo | null>(null)
+  const [infoLoading, setInfoLoading] = useState(false)
+  const [infoErr, setInfoErr] = useState('')
+  const key = store.key
+  const reloadInfo = useMemo(() => () => {
+    if (!store.key) { setInfo(null); return }
+    setInfoLoading(true); setInfoErr('')
+    keyInfo().then(setInfo, (e) => setInfoErr((e as Error).message)).finally(() => setInfoLoading(false))
+  }, [])
+  useEffect(() => { reloadInfo() }, [key, reloadInfo])
+  const usage: Usage = { info, loading: infoLoading, err: infoErr, reload: reloadInfo }
+  const remaining = info?.free?.remaining
 
   useEffect(() => { end.current?.scrollIntoView({ block: 'end' }) }, [turns])
   useEffect(() => () => abort.current?.abort(), [])
@@ -127,6 +176,7 @@ export function Chat({ model, year, books }: { model: string; year: string; book
       upd((t) => ({ ...t, error: msg, done: true }))
     } finally {
       setBusy(false)
+      reloadInfo()
     }
   }
 
@@ -139,7 +189,7 @@ export function Chat({ model, year, books }: { model: string; year: string; book
         ссылкам между разделами и перепроверяет себя отдельным агентом.{' '}
         <button className="linklike" onClick={openAgentHelp}>Как настроить агента →</button>
       </div>
-      <Settings onChange={refresh} />
+      <Settings onChange={refresh} usage={usage} />
       <div className="turns">
         {turns.length === 0 && (
           <div className="muted chat-empty">
@@ -165,6 +215,13 @@ export function Chat({ model, year, books }: { model: string; year: string; book
         ))}
         <div ref={end} />
       </div>
+      {ready && remaining !== undefined && remaining < 4 && (
+        <div className="usage-warn">
+          {remaining === 0
+            ? `Бесплатные запросы на сегодня закончились. Лимит обновится в ${dailyResetLocal()}.`
+            : `Бесплатных запросов осталось: ${remaining}, а один вопрос тратит 2–4. Ответ может оборваться на середине.`}
+        </div>
+      )}
       <form className="ask" onSubmit={ask}>
         <textarea
           value={q} onChange={(e) => setQ(e.target.value)} rows={2}
