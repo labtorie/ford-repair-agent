@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { HashRouter, Link, Route, Routes, useNavigate } from 'react-router-dom'
 import { findBook, loadCatalog, pageRoute, parseId, type Catalog } from './data'
 import { AgentHelp } from './AgentHelp'
+import { OPEN_AGENT_HELP } from './events'
 import { Home } from './Home'
 import { Car } from './Car'
 import { Viewer } from './Viewer'
@@ -38,14 +39,30 @@ function JumpToId() {
 
 function Header() {
   const [help, setHelp] = useState(false)
+  const ref = useRef<HTMLElement>(null)
+  useEffect(() => {
+    const open = () => setHelp(true)
+    window.addEventListener(OPEN_AGENT_HELP, open)
+    return () => window.removeEventListener(OPEN_AGENT_HELP, open)
+  }, [])
+  // expose the real header height (it wraps on narrow screens) to CSS: sticky panels/anchors use it
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const set = () => document.documentElement.style.setProperty('--header-h', `${el.offsetHeight}px`)
+    set()
+    const ro = new ResizeObserver(set)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
   return (
-    <header className="top">
+    <header className="top" ref={ref}>
       <Link to="/" className="brand">
         <span className="brand-mark">TSO</span>
         <span className="brand-text">Ford Service Manual <small>2000–2004</small></span>
       </Link>
       <JumpToId />
-      <button className="help-btn" onClick={() => setHelp(true)}>🤖 Как пользоваться с ИИ-агентом</button>
+      <button className="help-btn" onClick={() => setHelp(true)}>🤖 <span className="long">Как пользоваться с ИИ-агентом</span><span className="short">ИИ-агент</span></button>
       {help && <AgentHelp onClose={() => setHelp(false)} />}
     </header>
   )

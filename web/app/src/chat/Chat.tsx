@@ -3,6 +3,7 @@ import { idToRoute } from '../data'
 import { runAgent, type AgentResult, type Progress } from './agent'
 import { freeModels, store, type FreeModel } from './llm'
 import { renderMd } from './md'
+import { openAgentHelp } from '../events'
 
 type Turn = { q: string; progress: Progress[]; text: string; result?: AgentResult; error?: string; done: boolean }
 
@@ -40,6 +41,7 @@ function Settings({ onChange }: { onChange: () => void }) {
         <label>
           Модель&nbsp;
           <select value={model} onChange={(e) => { store.model = e.target.value; setModel(e.target.value); onChange() }}>
+            {!models.length && <option value="">{err ? 'список недоступен' : 'загрузка моделей…'}</option>}
             {models.map((m) => <option key={m.id} value={m.id}>{m.name || m.id}</option>)}
           </select>
         </label>
@@ -130,6 +132,13 @@ export function Chat({ model, year, books }: { model: string; year: string; book
 
   return (
     <div className="chat">
+      <div className="chat-disclaimer">
+        <b>Это упрощённый вспомогательный режим, а не основной способ работы с мануалом.</b> Бесплатные модели слабее
+        и могут ошибаться даже с проверкой: всегда открывайте источник по ссылке и сверяйтесь с текстом мануала.
+        Для надёжных ответов настройте ИИ-агента локально в Claude Code: он ищет в несколько шагов, ходит по
+        ссылкам между разделами и перепроверяет себя отдельным агентом.{' '}
+        <button className="linklike" onClick={openAgentHelp}>Как настроить агента →</button>
+      </div>
       <Settings onChange={refresh} />
       <div className="turns">
         {turns.length === 0 && (

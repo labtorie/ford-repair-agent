@@ -5,7 +5,7 @@
 //   4. check   (code) every quote must occur verbatim in its cited chunk; every [ID] must be a retrieved chunk
 //   5. verify  (LLM)  independent claim-by-claim review against the cited chunks
 //   6. revise  (LLM)  only if 4/5 found problems; then the code checks run again
-import { loadSearch, TYPE_LABEL, type SearchDoc } from '../data'
+import { loadSearch, type SearchDoc } from '../data'
 import { search } from '../search'
 import { complete, parseJson, type Msg } from './llm'
 
@@ -37,8 +37,21 @@ function typeOfBook(books: Record<string, string[]>, b: string) {
   return ''
 }
 
+// English labels: the model reads an all-English context
+const TYPE_EN: Record<string, string> = {
+  SERVICE: 'Workshop Manual', PCED: 'PCED (powertrain diagnosis)', EVTM: 'Wiring Diagrams', BODYREP: 'Body Repair',
+  TSB: 'Technical Service Bulletin', RECALL: 'Recall', CALIB: 'Calibration',
+}
+
 function header(d: SearchDoc, type: string) {
-  return [`[${d[0]}]`, TYPE_LABEL[type] ?? type, d[3], d[1], d[2] !== d[1] ? d[2] : ''].filter(Boolean).join(' | ')
+  return [`[${d[0]}]`, TYPE_EN[type] ?? type, d[3], d[1], d[2] !== d[1] ? d[2] : ''].filter(Boolean).join(' | ')
+}
+
+/** Topic family used to drop off-topic stragglers: workshop/body manual section group (e.g. "307"), all of PCED as one. */
+function family(doc: SearchDoc, type: string): string | null {
+  if (type === 'SERVICE' || type === 'BODYREP') return doc[3].match(/^(\d{3})-/)?.[1] ?? null
+  if (type === 'PCED') return 'PCED'
+  return null // TSB / recall / wiring are never filtered
 }
 
 // ---------------------------------------------------------------- 1. plan
@@ -74,7 +87,21 @@ async function retrieve(books: Record<string, string[]>, queries: string[], type
       fused.set(h.doc[0], cur)
     })
   }
-  const ranked = [...fused.values()].sort((a, b) => b.score - a.score)
+  let ranked = [...fused.values()].sort((a, b) => b.score - a.score)
+  // If one topic clearly dominates the top results, drop single off-topic hits from other sections
+  // (e.g. "instrument cluster" showing up for a transmission DTC).
+  const fam = (r: { doc: SearchDoc; book: string }) => family(r.doc, typeOfBook(books, r.book))
+  const top = ranked.slice(0, 8).map(fam)
+  const counts = new Map<string, number>()
+  for (const f of top) if (f) counts.set(f, (counts.get(f) ?? 0) + 1)
+  const [dominant, n] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0] ?? [null, 0]
+  if (dominant && n >= 4) {
+    const pool = ranked.slice(0, 14).map(fam)
+    ranked = ranked.filter((r) => {
+      const f = fam(r)
+      return !f || f === dominant || pool.filter((x) => x === f).length > 1
+    })
+  }
   const picked: { doc: SearchDoc; book: string }[] = []
   let size = 0
   const take = (doc: SearchDoc, book: string) => {

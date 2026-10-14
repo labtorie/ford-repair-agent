@@ -63,6 +63,14 @@ export function Viewer() {
   const [chunks, setChunks] = useState<SearchDoc[]>([])
   const [err, setErr] = useState<string | null>(null)
   const [side, setSide] = useState(false)
+  // mobile TOC drawer: close on navigation and on Escape
+  useEffect(() => { setSide(false) }, [book, page, anchor])
+  useEffect(() => {
+    if (!side) return
+    const k = (e: KeyboardEvent) => e.key === 'Escape' && setSide(false)
+    window.addEventListener('keydown', k)
+    return () => window.removeEventListener('keydown', k)
+  }, [side])
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => { loadConfig().then(setCfg, () => setCfg({ packs: {} })) }, [])
@@ -113,7 +121,9 @@ export function Viewer() {
 
   return (
     <div className={`viewer ${side ? 'side-open' : ''}`}>
+      {side && <div className="v-backdrop" onClick={() => setSide(false)} />}
       <aside className="v-toc">
+        <div className="v-toc-close"><span>Оглавление</span><button onClick={() => setSide(false)} aria-label="Закрыть оглавление">✕ Закрыть</button></div>
         {bk && (
           <>
             <div className="v-book">
@@ -128,7 +138,7 @@ export function Viewer() {
         )}
       </aside>
       <article className="v-main">
-        <button className="side-toggle" onClick={() => setSide((s) => !s)}>☰ Оглавление</button>
+        <button className="side-toggle" onClick={() => setSide(true)}>☰ Оглавление</button>
         {err && <div className="error">Ошибка загрузки: {err}</div>}
         {path && <div className="crumbs">{path.slice(0, -1).join(' › ')}</div>}
         <div className="v-head">

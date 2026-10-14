@@ -51,6 +51,7 @@ input, select, button { font: inherit; color: inherit; }
 .jump input { flex: 1; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
 .jump button, .search-form button { padding: 7px 12px; border: 0; border-radius: 8px; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
 .jump-msg { position: absolute; top: 100%; left: 0; font-size: 12px; color: #c0392b; background: var(--panel); padding: 2px 6px; border-radius: 4px; }
+.help-btn .short { display: none; }
 .help-btn { margin-left: auto; border: 1px solid var(--accent); color: var(--accent); background: var(--accent-soft); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-weight: 550; }
 
 /* modal */
@@ -121,11 +122,11 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; }
 .toc-empty { padding: 3px 20px; color: var(--muted); }
 
 /* viewer */
-.viewer { display: grid; grid-template-columns: 320px minmax(0, 1fr) 250px; gap: 0; min-height: calc(100vh - 56px); }
-.v-toc { position: sticky; top: 56px; height: calc(100vh - 56px); overflow-y: auto; padding: 12px; border-right: 1px solid var(--line); background: var(--panel); }
+.viewer { display: grid; grid-template-columns: 320px minmax(0, 1fr) 250px; gap: 0; min-height: calc(100vh - var(--header-h, 56px)); }
+.v-toc { position: sticky; top: var(--header-h, 56px); height: calc(100vh - var(--header-h, 56px)); overflow-y: auto; padding: 12px; border-right: 1px solid var(--line); background: var(--panel); }
 .v-book { padding: 4px 4px 10px; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
 .v-main { padding: 16px 26px 60px; min-width: 0; }
-.v-outline { position: sticky; top: 56px; height: calc(100vh - 56px); overflow-y: auto; padding: 14px 12px; border-left: 1px solid var(--line); font-size: 13px; }
+.v-outline { position: sticky; top: var(--header-h, 56px); height: calc(100vh - var(--header-h, 56px)); overflow-y: auto; padding: 14px 12px; border-left: 1px solid var(--line); font-size: 13px; }
 .v-outline ul { list-style: none; padding: 0; margin: 6px 0; }
 .v-outline li { padding: 5px 6px; border-radius: 6px; }
 .v-outline li.cur { background: var(--accent-soft); }
@@ -139,7 +140,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; }
 .pager { display: flex; justify-content: space-between; margin-top: 30px; padding-top: 12px; border-top: 1px solid var(--line); }
 .pdf a { display: inline-block; margin-bottom: 8px; }
 .pdf iframe { width: 100%; height: 82vh; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
-.side-toggle { display: none; }
+.side-toggle, .v-toc-close, .v-backdrop { display: none; }
 
 /* original manual html */
 .manual { background: var(--manual-bg); color: var(--manual-ink); padding: 16px 20px; border-radius: 10px; box-shadow: var(--shadow); overflow-x: auto; font-size: 14.5px; }
@@ -153,7 +154,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; }
 .manual h5 { font-size: 16px; margin: 18px 0 8px; color: var(--accent); }
 .manual .bookinfo, .manual .BOOKINFO { font-size: 12px; color: var(--muted); font-weight: 600; }
 .manual td[bgcolor], .manual tr[bgcolor] { color: #111; }
-.manual a[id] { scroll-margin-top: 70px; }
+.manual a[id] { scroll-margin-top: calc(var(--header-h, 56px) + 12px); }
 .manual .flash { background: var(--flash); transition: background 1s; }
 .manual hr { border: 0; border-top: 1px solid var(--line); }
 
@@ -162,15 +163,35 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; }
   .v-outline { display: none; }
 }
 @media (max-width: 760px) {
+  /* compact header: brand + help on the first row, "go to ID" on the second */
   .top { padding: 8px 12px; gap: 8px; }
-  .help-btn { margin-left: 0; font-size: 13px; }
+  .brand-text small { display: none; }
+  .help-btn { margin-left: auto; font-size: 13px; padding: 5px 10px; }
+  .help-btn .long { display: none; }
+  .help-btn .short { display: inline; }
+  .jump { order: 3; flex: 1 1 100%; max-width: none; min-width: 0; }
+  .jump-msg { position: static; }
   .viewer { display: block; }
-  .v-toc { display: none; position: fixed; inset: 56px 0 0 0; z-index: 15; height: auto; }
-  .side-open .v-toc { display: block; }
-  .side-toggle { display: inline-block; margin-bottom: 8px; border: 1px solid var(--line); background: var(--panel); border-radius: 7px; padding: 4px 10px; }
-  .v-main { padding: 12px 16px 50px; }
+  /* TOC as an off-canvas drawer below the header */
+  .v-toc {
+    position: fixed; top: var(--header-h, 56px); bottom: 0; left: 0; z-index: 30;
+    width: min(88vw, 380px); height: auto; transform: translateX(-105%); transition: transform .2s ease;
+    box-shadow: 4px 0 18px rgba(0, 0, 0, .25);
+  }
+  .side-open .v-toc { transform: none; }
+  .v-toc-close {
+    display: flex; align-items: center; justify-content: space-between; position: sticky; top: -12px; z-index: 1;
+    margin: -12px -12px 8px; padding: 10px 12px; background: var(--panel); border-bottom: 1px solid var(--line); font-weight: 600;
+  }
+  .v-toc-close button { border: 1px solid var(--line); background: var(--bg); border-radius: 7px; padding: 4px 10px; cursor: pointer; }
+  .v-backdrop { display: block; position: fixed; inset: var(--header-h, 56px) 0 0 0; z-index: 25; background: rgba(0, 0, 0, .35); }
+  .side-toggle { display: inline-block; margin-bottom: 8px; border: 1px solid var(--line); background: var(--panel); border-radius: 7px; padding: 6px 12px; cursor: pointer; }
+  .v-main { padding: 12px 14px 50px; }
   .manual { padding: 10px 12px; }
   .models th, .models td { padding: 6px 4px; }
+  .car, .home { padding-left: 12px; padding-right: 12px; }
+  .modal { padding: 18px 16px; }
+  .modal-bg { padding: 12px 8px; }
 }
 
 /* chat */
@@ -204,3 +225,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; }
 .ask textarea { flex: 1; resize: vertical; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); font: inherit; }
 .ask button:disabled { opacity: .5; cursor: default; }
 @media (max-width: 760px) { .chat-settings input { width: 100%; } .turn .q { max-width: 95%; } }
+
+.chat-disclaimer { background: #fff7e6; color: #5c3b00; border: 1px solid #f5d38a; border-radius: 10px; padding: 10px 14px; font-size: 13.5px; }
+@media (prefers-color-scheme: dark) { .chat-disclaimer { background: #2e2410; color: #f1d9a6; border-color: #6b5420; } }
+.linklike { border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0; font: inherit; font-weight: 600; text-decoration: underline; }
