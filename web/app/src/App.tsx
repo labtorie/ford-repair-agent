@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { HashRouter, Link, Route, Routes, useNavigate } from 'react-router-dom'
+import { HashRouter, Link, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { findBook, loadCatalog, pageRoute, parseId, type Catalog } from './data'
 import { AgentHelp } from './AgentHelp'
 import { OPEN_AGENT_HELP } from './events'
@@ -39,32 +39,57 @@ function JumpToId() {
 
 function Header() {
   const [help, setHelp] = useState(false)
+  const [hidden, setHidden] = useState(false)
+  const [height, setHeight] = useState(56)
   const ref = useRef<HTMLElement>(null)
+  const loc = useLocation()
   useEffect(() => {
     const open = () => setHelp(true)
     window.addEventListener(OPEN_AGENT_HELP, open)
     return () => window.removeEventListener(OPEN_AGENT_HELP, open)
   }, [])
-  // expose the real header height (it wraps on narrow screens) to CSS: sticky panels/anchors use it
+  // real header height (it wraps on narrow screens)
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    const set = () => document.documentElement.style.setProperty('--header-h', `${el.offsetHeight}px`)
-    set()
-    const ro = new ResizeObserver(set)
+    const ro = new ResizeObserver(() => setHeight(el.offsetHeight))
     ro.observe(el)
+    setHeight(el.offsetHeight)
     return () => ro.disconnect()
   }, [])
+  // hide on scroll down, show again as soon as the user scrolls up
+  useEffect(() => {
+    let last = window.scrollY
+    const onScroll = () => {
+      const y = window.scrollY
+      const d = y - last
+      if (y < 8) setHidden(false)
+      else if (d > 6 && !ref.current?.contains(document.activeElement)) setHidden(true)
+      else if (d < -6) setHidden(false)
+      if (Math.abs(d) > 6 || y < 8) last = y
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+  useEffect(() => { setHidden(false) }, [loc.pathname])
+  // CSS: --header-h = full height (page padding), --header-offset = visible part (sticky panels, drawer, anchors)
+  useEffect(() => {
+    const r = document.documentElement.style
+    r.setProperty('--header-h', `${height}px`)
+    r.setProperty('--header-offset', hidden ? '0px' : `${height}px`)
+  }, [height, hidden])
   return (
-    <header className="top" ref={ref}>
-      <Link to="/" className="brand">
-        <span className="brand-mark">TSO</span>
-        <span className="brand-text">Ford Service Manual <small>2000–2004</small></span>
-      </Link>
-      <JumpToId />
-      <button className="help-btn" onClick={() => setHelp(true)}>🤖 <span className="long">Как пользоваться с ИИ-агентом</span><span className="short">ИИ-агент</span></button>
+    <>
+      <header className={`top ${hidden ? 'hidden' : ''}`} ref={ref}>
+        <Link to="/" className="brand">
+          <span className="brand-mark">TSO</span>
+          <span className="brand-text">Ford Service Manual <small>2000–2004</small></span>
+        </Link>
+        <JumpToId />
+        <button className="help-btn" onClick={() => setHelp(true)}>🤖 <span className="long">Как пользоваться с ИИ-агентом</span><span className="short">ИИ-агент</span></button>
+      </header>
       {help && <AgentHelp onClose={() => setHelp(false)} />}
-    </header>
+    </>
   )
 }
 
